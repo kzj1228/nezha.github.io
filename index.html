@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频播放</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .video-container {
+            width: 80%;
+            max-width: 800px;
+            margin: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        video {
+            width: 100%;
+            display: block;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .format-notice {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>视频播放</h1>
+    <div class="video-container">
+        <video controls>
+            <!-- 尝试多种可能的视频格式 -->
+            <source src="nezha.mp4" type="video/mp4">
+            <source src="nezha.webm" type="video/webm">
+            <source src="nezha.ogg" type="video/ogg">
+            您的浏览器不支持HTML5视频标签。
+        </video>
+        <p class="format-notice">如果视频无法播放，请确保视频文件名为"nezha"并具有.mp4、.webm或.ogg扩展名</p>
+    </div>
+</body>
+</html>
