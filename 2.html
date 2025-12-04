@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>疯狂动物城2 - 视频播放</title>
+    <!-- 引入HLS.js库，用于解析m3u8格式 -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.14/dist/hls.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .player-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: #fff;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+
+        .control-btn:hover {
+            color: #4fc3f7;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background-color: #444;
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background-color: #4fc3f7;
+            border-radius: 3px;
+            width: 0%;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background-color: #444;
+            border-radius: 2px;
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #4fc3f7;
+        }
+
+        .time-display {
+            font-size: 14px;
+            color: #ccc;
+            min-width: 100px;
+            text-align: right;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 20px;
+        }
+
+        /* 全屏按钮样式 */
+        .fullscreen-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .player-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .volume-control {
+                order: 1;
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .time-display {
+                min-width: 80px;
+            }
+        }
+
+        /* 全屏状态下的样式调整 */
+        :fullscreen .player-container {
+            max-width: 100%;
+            width: 100%;
+            height: 100vh;
+            border-radius: 0;
+        }
+
+        :-webkit-full-screen .player-container {
+            max-width: 100%;
+            width: 100%;
+            height: 100vh;
+            border-radius: 0;
+        }
+
+        :fullscreen video {
+            height: 100%;
+            object-fit: contain;
+        }
+
+        :-webkit-full-screen video {
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container" id="playerContainer">
+        <div class="loading" id="loading">加载中...</div>
+        <video id="videoPlayer" controlsList="nodownload" poster="" preload="auto"></video>
+        <div class="player-controls">
+            <button class="control-btn" id="playBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5L19 12L8 19V5Z" fill="currentColor"/>
+                </svg>
+            </button>
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="volume-control">
+                <button class="control-btn" id="muteBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 3.23V5.29C16.89 6.15 19 8.83 19 12C19 15.17 16.89 17.84 14 18.7V20.77C18 19.86 21 16.28 21 12C21 7.72 18 4.14 14 3.23ZM16.5 12C16.5 10.23 15.54 8.71 14 7.97V16.02C15.54 15.29 16.5 13.76 16.5 12ZM3 9V15H7L12 20V4L7 9H3Z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+            </div>
+            <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+            <!-- 新增全屏按钮 -->
+            <button class="control-btn fullscreen-btn" id="fullscreenBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 14H5V10H3V14H1V16H3V20H5V16H7V14ZM19 14H17V16H19V20H21V16H23V14H21V10H19V14ZM16 7H20V5H16V1H14V5H10V7H14V11H16V7ZM8 7H12V5H8V1H6V5H2V7H6V11H8V7Z" fill="currentColor"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const videoPlayer = document.getElementById('videoPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const muteBtn = document.getElementById('muteBtn');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const loading = document.getElementById('loading');
+        const fullscreenBtn = document.getElementById('fullscreenBtn'); // 全屏按钮
+        const playerContainer = document.getElementById('playerContainer');
+        
+        // m3u8视频地址
+        const videoUrl = 'https://v.fengbao8.com/video/fengkuangdongwucheng2/TCV2/index.m3u8';
+
+        // 初始化HLS播放
+        function initPlayer() {
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    maxBufferLength: 30, // 最大缓冲时长
+                    maxMaxBufferLength: 60,
+                    startLevel: 0 // 从最低清晰度开始加载
+                });
+                
+                // 加载m3u8文件
+                hls.loadSource(videoUrl);
+                hls.attachMedia(videoPlayer);
+                
+                // HLS事件监听
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    loading.style.display = 'none';
+                    console.log('视频清单解析完成，可以播放');
+                });
+
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('HLS播放错误:', data);
+                    loading.textContent = '加载失败，请刷新页面';
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                // 无法恢复的错误
+                                loading.textContent = '播放出错，无法恢复';
+                                break;
+                        }
+                    }
+                });
+            } 
+            // 浏览器原生支持HLS (如Safari)
+            else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                videoPlayer.src = videoUrl;
+                videoPlayer.addEventListener('loadedmetadata', () => {
+                    loading.style.display = 'none';
+                });
+            } 
+            else {
+                loading.textContent = '您的浏览器不支持播放此视频格式';
+                console.error('浏览器不支持HLS播放');
+            }
+        }
+
+        // 播放/暂停控制
+        playBtn.addEventListener('click', togglePlay);
+        videoPlayer.addEventListener('click', togglePlay);
+
+        function togglePlay() {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19H10V5H6V19ZM14 5V19H18V5H14Z" fill="currentColor"/></svg>';
+            } else {
+                videoPlayer.pause();
+                playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5L19 12L8 19V5Z" fill="currentColor"/></svg>';
+            }
+        }
+
+        // 进度条更新
+        videoPlayer.addEventListener('timeupdate', updateProgress);
+
+        function updateProgress() {
+            const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            // 更新时间显示
+            const currentTime = formatTime(videoPlayer.currentTime);
+            const duration = formatTime(videoPlayer.duration);
+            timeDisplay.textContent = `${currentTime} / ${duration}`;
+        }
+
+        // 点击进度条跳转播放位置
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            videoPlayer.currentTime = pos * videoPlayer.duration;
+        });
+
+        // 音量控制
+        volumeSlider.addEventListener('input', (e) => {
+            videoPlayer.volume = e.target.value;
+            // 更新静音按钮状态
+            updateMuteIcon();
+        });
+
+        muteBtn.addEventListener('click', toggleMute);
+
+        function toggleMute() {
+            videoPlayer.muted = !videoPlayer.muted;
+            updateMuteIcon();
+        }
+
+        function updateMuteIcon() {
+            if (videoPlayer.muted || videoPlayer.volume === 0) {
+                muteBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.5 12C16.5 10.23 15.54 8.71 14 7.97V16.02C15.54 15.29 16.5 13.76 16.5 12ZM3 9V15H7L12 20V4L7 9H3ZM19.07 4.93C17.97 3.83 16.03 3.83 14.93 4.93C13.83 6.03 13.83 7.97 14.93 9.07L16.34 7.66C15.68 7 15.34 6.08 15.34 5.1C15.34 3.08 17.02 1.4 19.04 1.4C20.02 1.4 20.94 1.74 21.6 2.4L20.19 3.81C19.88 3.5 19.47 3.34 19.04 3.34C18.18 3.34 17.47 4.05 17.47 4.9C17.47 5.33 17.63 5.74 17.94 6.05L19.07 4.93ZM20.71 7.04C21.1 6.65 21.1 6.02 20.71 5.63L19.58 4.5C19.2 4.11 18.57 4.11 18.18 4.5C17.79 4.89 17.79 5.52 18.18 5.91L19.31 7.04C19.7 7.43 20.33 7.43 20.71 7.04Z" fill="currentColor"/></svg>';
+                volumeSlider.value = 0;
+            } else {
+                muteBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 3.23V5.29C16.89 6.15 19 8.83 19 12C19 15.17 16.89 17.84 14 18.7V20.77C18 19.86 21 16.28 21 12C21 7.72 18 4.14 14 3.23ZM16.5 12C16.5 10.23 15.54 8.71 14 7.97V16.02C15.54 15.29 16.5 13.76 16.5 12ZM3 9V15H7L12 20V4L7 9H3Z" fill="currentColor"/></svg>';
+            }
+        }
+
+        // 格式化时间为 MM:SS 格式
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // 视频结束时重置播放按钮
+        videoPlayer.addEventListener('ended', () => {
+            playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5L19 12L8 19V5Z" fill="currentColor"/></svg>';
+        });
+
+        // ========== 新增全屏功能 ==========
+        // 全屏切换函数
+        function toggleFullscreen() {
+            // 检查是否已经是全屏状态
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                // 退出全屏
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                // 恢复全屏按钮图标
+                fullscreenBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 14H5V10H3V14H1V16H3V20H5V16H7V14ZM19 14H17V16H19V20H21V16H23V14H21V10H19V14ZM16 7H20V5H16V1H14V5H10V7H14V11H16V7ZM8 7H12V5H8V1H6V5H2V7H6V11H8V7Z" fill="currentColor"/></svg>';
+            } else {
+                // 进入全屏
+                if (playerContainer.requestFullscreen) {
+                    playerContainer.requestFullscreen();
+                } else if (playerContainer.webkitRequestFullscreen) {
+                    playerContainer.webkitRequestFullscreen();
+                }
+                // 切换全屏按钮图标（退出全屏样式）
+                fullscreenBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 16H3V14H1V20H7V18H5V16ZM19 8H21V10H23V4H17V6H19V8ZM14 19V17H16V19H20V13H18V15H14V19ZM10 5V7H8V5H4V11H6V9H10V5Z" fill="currentColor"/></svg>';
+            }
+        }
+
+        // 监听全屏状态变化，更新按钮图标
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+
+        function updateFullscreenIcon() {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                fullscreenBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 16H3V14H1V20H7V18H5V16ZM19 8H21V10H23V4H17V6H19V8ZM14 19V17H16V19H20V13H18V15H14V19ZM10 5V7H8V5H4V11H6V9H10V5Z" fill="currentColor"/></svg>';
+            } else {
+                fullscreenBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 14H5V10H3V14H1V16H3V20H5V16H7V14ZM19 14H17V16H19V20H21V16H23V14H21V10H19V14ZM16 7H20V5H16V1H14V5H10V7H14V11H16V7ZM8 7H12V5H8V1H6V5H2V7H6V11H8V7Z" fill="currentColor"/></svg>';
+            }
+        }
+
+        // 绑定全屏按钮点击事件
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+        // 支持ESC键退出全屏后更新图标
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                updateFullscreenIcon();
+            }
+        });
+
+        // 页面加载完成后初始化播放器
+        window.addEventListener('DOMContentLoaded', initPlayer);
+    </script>
+</body>
+</html>
