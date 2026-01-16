@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的世界-服务器连接引导</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", "宋体", sans-serif;
+        }
+        /* 页面整体居中+背景美化 */
+        body {
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            gap: 25px;
+        }
+        /* 大大的红色离线二字 - 核心醒目样式 */
+        .offline-text {
+            font-size: 120px;
+            font-weight: bold;
+            color: #e6212a;
+            text-shadow: 3px 3px 8px rgba(0,0,0,0.2);
+        }
+        /* 下方小字提示文本 */
+        .tips-text {
+            font-size: 16px;
+            color: #333;
+            text-align: center;
+            line-height: 1.6;
+            width: 90%;
+            max-width: 600px;
+        }
+        /* 服务器地址区域 稍大字体+复制框 */
+        .server-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            justify-content: center;
+        }
+        .server-address {
+            font-size: 22px;
+            color: #222;
+            font-weight: 500;
+            user-select: all;
+        }
+        /* 按钮统一样式 - 美观圆润 */
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        .copy-btn {
+            background-color: #409eff;
+            color: white;
+        }
+        .copy-btn:hover {
+            background-color: #2686e8;
+        }
+        /* 下载区域 */
+        .download-box {
+            margin-top: 10px;
+        }
+        .download-btn {
+            background-color: #e6212a;
+            color: white;
+            padding: 10px 25px;
+            font-size: 17px;
+        }
+        .download-btn:hover {
+            background-color: #c91822;
+        }
+        /* 复制成功提示 */
+        .success-tips {
+            color: #67c23a;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 大大的红色 离线 二字 -->
+    <div class="offline-text">离线</div>
+
+    <!-- 小字提示文案 -->
+    <div class="tips-text">
+        服务器地址请使用复制，进入多人游戏，直接连接，然后按住Ctrl，再按下v粘贴，否则会产生问题。
+    </div>
+
+    <!-- 服务器地址+复制按钮 -->
+    <div class="server-box">
+        <div class="server-address" id="serverUrl">y.kzj1228.dpdns.org</div>
+        <button class="copy-btn" onclick="copyServerUrl()">复制地址</button>
+    </div>
+    <div class="success-tips" id="successTips">✅ 复制成功！可以直接粘贴使用</div>
+
+    <!-- 必要资源下载+跳转按钮 -->
+    <div class="download-box">
+        <button class="download-btn" onclick="window.open('https://pan.moe/s/JGD8F0')">必要资源下载</button>
+    </div>
+
+    <script>
+        // 复制服务器地址功能
+        function copyServerUrl() {
+            const url = document.getElementById('serverUrl').innerText;
+            navigator.clipboard.writeText(url);
+            // 显示复制成功提示
+            const tips = document.getElementById('successTips');
+            tips.style.display = 'block';
+            // 3秒后自动隐藏提示
+            setTimeout(() => {
+                tips.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
