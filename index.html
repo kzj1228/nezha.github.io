@@ -70,18 +70,6 @@
     <script>
         const input = document.getElementById('numberInput');
         
-        // 限制只能输入数字
-        input.addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^\d]/g, '');
-        });
-        
-        // 防止粘贴非数字内容
-        input.addEventListener('paste', function(e) {
-            e.preventDefault();
-            const text = (e.clipboardData || window.clipboardData).getData('text');
-            document.execCommand('insertText', false, text.replace(/[^\d]/g, ''));
-        });
-        
         // 回车键触发跳转
         input.addEventListener('keyup', function(e) {
             if (e.key === 'Enter') {
